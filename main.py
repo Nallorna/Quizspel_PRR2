@@ -1,12 +1,25 @@
-from GeneralSystems.PlayerSystems import *
-from GeneralSystems.QuestionSystems import *
-from GeneralSystems.DatabaseSystems import *
+from PlayerSystems import *
+from QuestionSystems import *
+from DatabaseSystems import *
 import random as rand
 import time
 import os
 
 
-def ask(question: str, *args):
+def split(a, n):
+    k, m = divmod(len(a), n)
+    return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
+
+def ask(question: str, *args: list) -> str:
+    """
+    Asks the user to answer a question and will only accept pre-showed alternatives
+    Args:
+        question: The Question that the user will give their input to
+        *args: A list of every alternative that is acceptable to answer
+
+    Returns: A string of the users answer
+
+    """
     userinput = ""
     if type(list(args)[0]) != list:
         args = [args]
@@ -22,45 +35,55 @@ def ask(question: str, *args):
         os.system("clear")
     return userinput
 
-
 class Turn(Player, BQS):
-    def __new__(cls):
+    active = False
+    def __new__(cls) -> object:
+        """
+        Kollar om det finns tillräckligt med frågor per spelare
+        """
         if cls._Player_list and cls._QuestionType_Dictionary and (len([
             item for sublist in cls._QuestionType_Dictionary.values()
             for item in sublist
         ]) >= 6 * len(cls._Player_list)):
             return object.__new__(cls)
         else:
-            raise "Need to initiate atleast six Question per Player per round"
+            raise "Need to initiate at least six Question per Player per round"
 
     def __init__(self):
-        self.QnPDict = -self
-        self.active = True
+        """
+        Skapar en dictionary med alla spelare och frågor med hjälp av __neg__(self) och "aktiverar" Turn objektet
+        """
+        self._QnPDict = -self
+        Turn.active = True
 
     def __neg__(self):
-        if "MaAQ" in self._QuestionType_Dictionary.keys():
+        """
+        Checks if any MaAQ objects has been initiated, and if so removes the old ones and creates new ones. Also creates a dictionary with questions to every player
+
+        Returns: A dictionary with questions to every player
+
+        """
+        if "MaAQ" in self._QuestionType_Dictionary.keys() and Turn.active:
             for n in range(len(self._QuestionType_Dictionary["MaAQ"])):
                 points = int(self._QuestionType_Dictionary["MaAQ"][n])
                 del self._QuestionType_Dictionary["MaAQ"][n]
                 MaAQ(points)
-        return {
-            self._Player_list[n]: rand.sample([
-                item for sublist in [
-                                        rand.choices(n, k=1)
-                                        for n in self._QuestionType_Dictionary.values()
-                                    ] + [
-                                        rand.choices(n, k=1)
-                                        for n in self._QuestionValue_Dictionary.values()
-                                    ] for item in sublist
-            ], k=6)
-            for n in range(len(self._Player_list))
-        }
+        for key in self._QuestionValue_Dictionary.keys():
+            rand.shuffle(self._QuestionValue_Dictionary[key])
+        retdict = {}
+        for n in range(5,len(self._Player_list)*5+5,5):
+            playerquestions = []
+            for value in self._QuestionValue_Dictionary.values():
+                playerquestions += value[n-5:n]
+                rand.shuffle(playerquestions)
+            retdict[self._Player_list[(n-1)//5]] = playerquestions
+        return retdict
 
     def __call__(self):
         for m in range(6):
             for n in self._Player_list:
-                print(f"{n}: {self.QnPDict[n][m]}")
-                svar = input() == self.QnPDict[n][m]
+                print(f"{n}: {self._QnPDict[n][m]}")
+                svar = input() == self._QnPDict[n][m]
                 if svar:
                     print("Rätt!\n")
                 else:
@@ -75,6 +98,11 @@ class Turn(Player, BQS):
         return print(score_str), input("Klicka enter för att fortsätta\n"), time.sleep(1)
 
     def scoreboard(self):
+        """
+        Creates a scoreboard from all active players players, as well as all players stored in the database
+        Returns:
+
+        """
         with open(self._Database_Path, "r") as file:
             scoreboard_str = [
                 f"{player[0]} - {player[1]} Poäng" for player in sorted(
@@ -88,14 +116,16 @@ class Turn(Player, BQS):
             ])
             return scoreboard_str
 
-
 if __name__ == '__main__':
     for key, value in dict(mQDB("QuizQAalternativ.txt")).items():
         MAQ(key, value[0], value)
+        MaAQ(15)
+
     for key, value in dict(sQDB("QuizQA.txt")).items():
-        SAQ(key, value)
-    [(MaAQ(5), MaAQ(15)) for n in range(17)]
-    [MaAQ(10) for n in range(16)]
+        SAQ(key, value.replace("Svar: ",""))
+
+    for n in range(-(-len(BQS._QuestionValue_Dictionary[15])//2)):
+        [MaAQ(5),MaAQ(10),MaAQ(15)]
 
     player_creator = True
     while player_creator:
@@ -103,7 +133,6 @@ if __name__ == '__main__':
         while not player_amount.isnumeric():
             player_amount = input("Hur många spelare?\n")
         for player in range(int(player_amount)):
-
             loadplayer = ""
             while type(loadplayer) != bool:
                 os.system("clear")

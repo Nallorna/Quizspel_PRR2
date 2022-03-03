@@ -4,24 +4,47 @@ import random as rand
 
 class BQS(ABC):  # Basic Question System
     _QuestionType_Dictionary = {}
-    _QuestionValue_Dictionary = {5: [], 10: [], 15: []}
+    _QuestionValue_Dictionary = {}
 
     @abstractmethod
-    def __new__(cls, points: int):
+    def __new__(cls, points: int, **kwargs: tuple) -> object:
+        """
+        Checks if their exists a key, and associated list, for both the points, and object name in the class
+        dictionaries
+        Args:
+            points: The amount of points that the object attribute self._points will have
+            **kwargs: Other keyword arguments that is not used in this method, but used in the __init__ method
+        """
         if cls.__name__ not in cls._QuestionType_Dictionary.keys():
             cls._QuestionType_Dictionary[cls.__name__] = []
         if points not in cls._QuestionValue_Dictionary.keys():
-            cls._QuestionType_Dictionary[points] = []
+            cls._QuestionValue_Dictionary[points] = []
         return object.__new__(cls)
 
     def __init__(self, question: str, answer: str, points: int):
+        """
+        Args:
+            question: The questions text
+            answer: The answer to the question
+            points: The amount of points that the question is associated with
+        """
         self._question = question.replace("\n", "")
         self._answer = answer.replace("\n", "").lower()
         self._points = points
-        return self._QuestionType_Dictionary[self.__class__.__name__].append(
-            self), self._QuestionValue_Dictionary[points].append(self)
+        self._QuestionType_Dictionary[self.__class__.__name__].append(
+            self)
+        self._QuestionValue_Dictionary[points].append(self)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int or str):
+        """
+        Checks if the given index is either a keyword for the objects attributes or their position within the
+        __init__ method, and if so return the given attribute
+
+        Args:
+            index: Either a str containing the attributes name or its index according to __init__ position
+
+        Returns: An object attribute
+        """
         if index in list(vars(self).keys()):
             return getattr(self, index)
         elif index in [
@@ -32,44 +55,58 @@ class BQS(ABC):  # Basic Question System
         else:
             raise IndexError
 
-    def __eq__(self, answer):
+    def __eq__(self, answer: str) -> int:
         if self._answer == answer.lower():
             return self._points
         else:
             return 0
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(vars(self))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self[0]
 
-    def __int__(self):
+    def __int__(self) -> int:
         return self._points
 
 
-class SAQ(BQS):  # Singel Answer Question
-    def __new__(cls, *args):
-        if len(args) == 2 and all([type(n) == str for n in args]):
+class SAQ(BQS):  # Single Answer Question
+    def __new__(cls, question: str, answer: str) -> object:
+        """
+        Checks if both the question and the answer is of type str and calls the __new__ method from the superclass
+        Args:
+            question: The questions text
+            answer: The answer to the question
+        """
+        if all([type(n) == str for n in [question, answer]]):
             super().__new__(cls, 10)
             return object.__new__(cls)
         else:
             raise TypeError()
 
     def __init__(self, question: str, answer: str):
-        answer = answer.replace("Svar: ", "")
         super().__init__(question, answer, 10)
 
 
 class MAQ(BQS):  # Multiple Answer Question
     def __new__(cls, question: str, answer: str, alternatives: list):
+        """
+        Checks if the arguments are of the right type, if the answer is in the alternatives list, and calls the
+        __new__ method from the superclass
+
+        Args:
+            question: The questions text
+            answer: The answer to the question
+            alternatives: A list of all alternatives, including the answer
+        """
         if all([
             type(question) == str,
             type(answer) == str,
             type(alternatives) == list
         ]):
             if answer in alternatives:
-                super().__new__(cls, 5)
+                super().__new__(cls, 5, )
                 return object.__new__(cls)
             else:
                 raise ValueError()
@@ -77,6 +114,15 @@ class MAQ(BQS):  # Multiple Answer Question
             raise TypeError()
 
     def __init__(self, question: str, answer: str, alternatives: list):
+        """
+        Calls __init__ method from the superclass as well as creating a new parameter self._alternatives that is a
+        shuffled dictionary of all alternatives with a corresponding key
+
+        Args:
+            question: The questions text
+            answer: The answer to the question
+            alternatives: A list of all alternatives, including the answer
+        """
         super().__init__(question, answer, 5)
         rand.shuffle(alternatives)
         self._alternatives = {["A", "B", "C"][n]: alternatives[n].replace("\n", "")
@@ -94,8 +140,7 @@ class MAQ(BQS):  # Multiple Answer Question
         else:
             raise IndexError
 
-    def __eq__(self, answer):
-
+    def __eq__(self, answer: str) -> int:
         if answer.lower() == list(self._alternatives.keys())[
             list(map(lambda x: x.lower(), self._alternatives.values())).index(
                     self._answer)].lower() or answer.lower() == self._answer:
@@ -103,27 +148,27 @@ class MAQ(BQS):  # Multiple Answer Question
         else:
             return 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self[0] + "\n" + self[3]
 
 
-class MaAQ(BQS):  # Mathematic Answer Question
-    def __new__(cls, points):
+class MaAQ(BQS):  # Mathematical Answer Question
+    def __new__(cls, points: int) -> object:
         if points in [5, 10, 15]:
-            super().__new__(cls, points)
+            super().__new__(cls, points, )
             return object.__new__(cls)
         else:
-            raise "Points error"
+            raise ValueError
 
     def __init__(self, points: int):
-        Random_Integers = [
+        random_integers = [
             rand.randint(points - 4, points + 6),
             rand.randint(points - 4, points + 6)
         ]
-        Arithmetic_Signs = ["+", "-", "*", "/"][rand.randint(0, 3)]
-        if Arithmetic_Signs == "/":
-            Random_Integers[0] = Random_Integers[0] * Random_Integers[1]
-        _question = f"{Random_Integers[0]}{Arithmetic_Signs}{Random_Integers[1]}"
+        arithmetic_signs = ["+", "-", "*", "/"][rand.randint(0, 3)]
+        if arithmetic_signs == "/":
+            random_integers[0] = random_integers[0] * random_integers[1]
+        _question = f"{random_integers[0]}{arithmetic_signs}{random_integers[1]}"
         _answer = str(round(eval(_question)))
         _points = points
         super().__init__(f"\nVad är:{_question}?\n", _answer, _points)

@@ -5,7 +5,7 @@ from abc import *
 
 
 # Decorators to DBMS classes
-def ReDe(func):  # Read Decorator
+def ReDe(func: object) -> object:  # Read Decorator
     def func_wrapper(self, *args):
         if type(self._file) == str:
             self._file = open(self._file, "r")
@@ -14,7 +14,7 @@ def ReDe(func):  # Read Decorator
     return func_wrapper
 
 
-def ApDe(func):  # Append Decorator
+def ApDe(func: object) -> object:  # Append Decorator
     def func_wrapper(self, *args):
         if type(self._file) == str:
             self._file = open(self._file, "a")
@@ -23,7 +23,7 @@ def ApDe(func):  # Append Decorator
     return func_wrapper
 
 
-def WiDe(func):  # Write Decorator
+def WiDe(func: object) -> object:  # Write Decorator
     def func_wrapper(self, *args):
         if type(self._file) == str:
             self._file = open(self._file, "w")
@@ -33,6 +33,7 @@ def WiDe(func):  # Write Decorator
 
 
 class DBMS(ABC):  # Database Management System (WIP)
+
     @abstractmethod
     def __new__(cls, *args):
         if Path(str(args[0])).is_file():

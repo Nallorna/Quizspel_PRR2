@@ -2,11 +2,16 @@
 Programförklaring
 ## Innehåll
 1. Genomgång av klasser
-3. Klassers relation till varrandra
-4. Inkapsling
-5. Polymorfism
-6. Problem
-7. Utvärdering
+   1. BQS
+   2. DBSM
+   3. Player
+   4. Turn
+2. Klassers relation till varrandra 
+   1. UML
+3. Inkapsling
+4. Polymorfism
+5. Problem
+6. Utvärdering
 
 
 # Genomgång av klasser
@@ -46,7 +51,40 @@ class BQS(ABC):
             cls._QuestionValue_Dictionary[points] = []
         return object.__new__(cls)
 ```
+Alla objekt- och klass attribut är privata då metoderna och underklasserna skall hantera dem. Därefter får användaren kalla på dessa attribut via de olika metoderna. Därav "_" framför attributen.
+Däremot ville jag ha ett system för att kalla på attributen och därav dundermetoden `__getitem__`.
+```
+    def __getitem__(self, index):
+        if index in list(vars(self).keys()):
+            return getattr(self, index)
+        elif index in [
+            n for n in range(-(len(list(vars(self).values()))),
+                             len(list(vars(self).values())))
+        ]:
+            return list(vars(self).values())[index]
+        else:
+            raise IndexError
+```
+Detta metod upplägget är använt av samtliga klasser i projektet. Relationen mellan de skapade underklasserna och överklassen, BQS, kan ses via det här UML-diagrammet.
+![](/Users/carlsjoback/Desktop/Quizspel-PRR2/QuestionSystems.png)
+<br> 
 #### SAQ - Singel Answer Question
+Single answer question är en underklass av BQS, vars uppgift är att hålla koll på frågor med ett svar. 
+Den enda skillnaden mellan SAQ och BQS är att SAQ har en modifierad `__new__` metod.
+```
+    def __new__(cls, question, answer):
+        if all([type(n) == str for n in [question, answer]]):
+            super().__new__(cls, 10)
+            return object.__new__(cls)
+        else:
+            raise TypeError()
+            
+    def __init__(self, question: str, answer: str):
+        super().__init__(question, answer, 10)
+```
+Förändringen försäkrar så att objektet inte kan instansieras om något av parametrarna inte existerar samt om båda inte är av typen str. 
+Observera att överklassen, BQS, egna `__new__` kallas för att potentiellt skapa nycklar till _QuestionType_Dictionary och _QuestionValue_Dictionary.
+Därefter kallas överklassens `__init__` metod.
 #### MAQ - Multiple Answer Question
 #### MaAQ - Mathematics Answer Question
 
